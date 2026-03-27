@@ -282,8 +282,12 @@ Contact / say thanks - Telegram [@kortkk](https://t.me/kortkk)
 ## 🏷 Keywords
 
 ```
-funpay parser, funpay scraper, парсер funpay, python scraping, marketplace parser,
-funpay automation, cardinal addon, cardinal плагин, cardinal, копирование лотов
+funpay parser, funpay scraper, парсер funpay, скрапер funpay, python scraping,
+marketplace parser, funpay automation, funpay автоматизация, cardinal addon,
+cardinal плагин, cardinal plugin, копирование лотов, copy lots, funpay lots,
+funpay лоты, funpay bot, фанпэй парсер, funpay cardinal, funpay export,
+экспорт лотов, funpay json, create lots, создание лотов, funpay tools,
+game marketplace, игровой маркетплейс, funpay helper
 ```
 
 ## 🔒 Disclaimer
