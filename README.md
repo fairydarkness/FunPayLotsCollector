@@ -287,7 +287,7 @@ marketplace parser, funpay automation, funpay автоматизация, cardin
 cardinal плагин, cardinal plugin, копирование лотов, copy lots, funpay lots,
 funpay лоты, funpay bot, фанпэй парсер, funpay cardinal, funpay export,
 экспорт лотов, funpay json, create lots, создание лотов, funpay tools,
-game marketplace, игровой маркетплейс, funpay helper
+game marketplace, игровой маркетплейс, funpay helper, funpay addon
 ```
 
 ## 🔒 Disclaimer
