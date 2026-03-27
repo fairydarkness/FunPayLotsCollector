@@ -1,0 +1,9 @@
+done/
+snods/
+*.json
+*.pyc
+.venv/
+venv/
+.idea/
+logs/
+*.log
