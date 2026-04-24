@@ -7,8 +7,11 @@ collect_lots.py
     FUNPAY_PHPSESSID   — кука PHPSESSID из браузера   (нужна только get_node_data)
 
 Опциональные переменные:
+    FUNPAY_USER_IDS    — ID профилей через запятую (например: 5464801,1234567)
+    PREFERRED_NODES    — ID нод через запятую, пусто = все ноды
     SNODS_DIR          — папка для кэша нод (по умолчанию "snods")
     REQUEST_TIMEOUT    — таймаут запросов в секундах (по умолчанию 30)
+    REQUEST_DELAY      — задержка между запросами в секундах (по умолчанию 0.5)
     USER_AGENT         — User-Agent для запросов
 """
 
@@ -34,17 +37,14 @@ except ImportError:
 # Настройки — меняйте здесь или через переменные окружения / .env
 # ---------------------------------------------------------------------------
 
-# ID профилей FunPay, которые нужно обработать
-USER_IDS = [
-    "5464801",
-]
+# ID профилей FunPay через запятую: FUNPAY_USER_IDS=5464801,1234567
+_user_ids_raw = os.getenv("FUNPAY_USER_IDS", "")
+USER_IDS = [uid.strip() for uid in _user_ids_raw.split(",") if uid.strip()]
 
-# Фильтр по нодам: оставить только эти категории. Пустой список = все ноды.
-PREFERRED_NODES = [
-    2582, 3974, 3972, 3973, 3175, 3174,
-    1000, 1132, 3734, 3173, 3172, 1129,
-    1130, 3559, 1355,
-]
+# Фильтр по нодам через запятую: PREFERRED_NODES=2582,3974,1000
+# Пустая переменная или отсутствие = собирать все ноды
+_nodes_raw = os.getenv("PREFERRED_NODES", "")
+PREFERRED_NODES = [int(n.strip()) for n in _nodes_raw.split(",") if n.strip()]
 
 # Задержка между запросами (секунды), чтобы не получить бан
 REQUEST_DELAY = float(os.getenv("REQUEST_DELAY", "0.5"))
