@@ -57,6 +57,8 @@ USER_AGENT = os.getenv(
 SNODS_DIR = Path(os.getenv("SNODS_DIR", "snods"))
 DONE_DIR = Path("done")
 
+SKIP_AUTO_DELIVERY = int(os.getenv("SKIP_AUTO_DELIVERY", "0"))
+
 # Маппинг: заголовок параметра на сайте → ключ в base_form
 FIELD_NAMES = {
     "Краткое описание":    "fields[summary][ru]",
@@ -201,12 +203,13 @@ def parse_lot(session: requests.Session, lot_id: str) -> Optional[dict]:
 
         params = extract_params(soup, locale)
 
+        if SKIP_AUTO_DELIVERY:
         # Если краткое описание содержит «авто» — это лот с автовыдачей, пропускаем
-        if locale == "ru":
-            summary = params.get("Краткое описание", "")
-            if "авто" in summary.lower():
-                print(f"    Лот {lot_id}: автовыдача, пропускаем")
-                return None
+            if locale == "ru":
+                summary = params.get("Краткое описание", "")
+                if "авто" in summary.lower():
+                    print(f"    Лот {lot_id}: автовыдача, пропускаем")
+                    return None
 
         details.update(params)
         time.sleep(REQUEST_DELAY)
