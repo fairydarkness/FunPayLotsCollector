@@ -3,6 +3,8 @@
 🌐 **Языки | Languages:**\
 [🇷🇺 Русский](#-русская-версия) | [🇬🇧 English](#-english-version)
 
+#[VPN](https://t.me/fairyvpn_bot) 
+
 ---
 
 # 🇷🇺 Русская версия
@@ -138,7 +140,7 @@ python collect_lots.py
 ## ⭐ Поддержка
 
 Если проект полезен - поставь ⭐  
-Связаться / отблагодарить - Telegram [@kortkk](https://t.me/kortkk)
+Связаться / отблагодарить - Telegram [@fairydarkns](https://t.me/fairydarkns)
 
 ---
 
@@ -275,7 +277,7 @@ The collected JSON files from the `done/` folder are used together with the FunP
 ## ⭐ Support
 
 If the project is useful, give it a ⭐  
-Contact / say thanks - Telegram [@kortkk](https://t.me/kortkk)
+Contact / say thanks - Telegram [@fairydarkns](https://t.me/fairydarkns)
 
 ---
 
