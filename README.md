@@ -3,7 +3,7 @@
 🌐 **Языки | Languages:**\
 [🇷🇺 Русский](#-русская-версия) | [🇬🇧 English](#-english-version)
 
-#[VPN](https://t.me/fairyvpn_bot) 
+# [VPN](https://t.me/fairyvpn_bot) 
 
 ---
 
