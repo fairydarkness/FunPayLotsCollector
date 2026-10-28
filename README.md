@@ -76,11 +76,29 @@ SNODS_DIR=snods
 DONE_DIR=done
 ```
 
+- `PREFER_LOCALE` — валюта цен: `ru` — рубли, `us` — доллары, `eur` — евро
+- `DEFAULT_AMOUNT` / `DEFAULT_ACTIVE` — количество и активность создаваемых лотов (`on` или пусто)
+- `FORM_CREATED_AT` — `0` = текущее время
+
+Все настройки также можно заполнить через веб-интерфейс (см. ниже).
+
 ## 🚀 Использование
+
+### 💻 Через консоль
+
+Заполните `.env` вручную и запустите:
 
 ```bash
 python collect_lots.py
 ```
+
+### 🖥 Через веб-интерфейс
+
+```bash
+python ui.py
+```
+
+Откроется `http://127.0.0.1:8765` — там можно заполнить `.env`, запустить сканирование, смотреть лог и скачать готовые JSON.
 
 ## 👉 После запуска
 
@@ -110,6 +128,7 @@ python collect_lots.py
 ├── collect_lots.py     # основной парсер
 ├── get_node_data.py    # получение параметров нод
 ├── getlogs.py          # логгер
+├── ui.py / ui.html     # веб-интерфейс
 ├── logs/               # логи
 ├── snods/              # данные нод
 ├── done/               # готовые JSON
@@ -213,11 +232,29 @@ SNODS_DIR=snods
 DONE_DIR=done
 ```
 
+- `PREFER_LOCALE` — price currency: `ru` — RUB, `us` — USD, `eur` — EUR
+- `DEFAULT_AMOUNT` / `DEFAULT_ACTIVE` — amount and active state of created lots (`on` or empty)
+- `FORM_CREATED_AT` — `0` = current time
+
+All settings can also be filled in via the web UI (see below).
+
 ## 🚀 Usage
+
+### 💻 Console
+
+Fill in `.env` manually and run:
 
 ```bash
 python collect_lots.py
 ```
+
+### 🖥 Web UI
+
+```bash
+python ui.py
+```
+
+Opens `http://127.0.0.1:8765` — fill in `.env`, start a scan, watch the log and download the resulting JSON files.
 
 ## 👉 After launch
 
@@ -247,6 +284,7 @@ The collected JSON files from the `done/` folder are used together with the FunP
 ├── collect_lots.py     # main parser
 ├── get_node_data.py    # getting node parameters
 ├── getlogs.py          # logger
+├── ui.py / ui.html     # web UI
 ├── logs/               # logs
 ├── snods/              # node data
 ├── done/               # finished JSON
