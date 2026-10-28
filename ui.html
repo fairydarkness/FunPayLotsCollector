@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FunPay Lots Collector</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --text: #1d2129; --muted: #6b7280;
+    --border: #dfe2e7; --accent: #2f6fed; --accent-text: #fff;
+    --danger: #d64545; --ok: #1f9d55; --log-bg: #0f1115; --log-text: #d6dae1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121418; --card: #1a1d23; --text: #e6e8eb; --muted: #9aa1ac;
+      --border: #2c3038; --accent: #5b8cff; --accent-text: #fff;
+      --log-bg: #0b0d10;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .group { margin-bottom: 18px; }
+  .group-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 8px; }
+  label { display: block; margin-bottom: 10px; }
+  .label { display: block; font-weight: 500; margin-bottom: 3px; }
+  .hint { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  input, select {
+    width: 100%; padding: 7px 9px; font: inherit; color: var(--text);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { display: flex; gap: 6px; }
+  .row input { flex: 1; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+  button {
+    font: inherit; padding: 7px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  button.danger { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: default; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .status { margin-left: auto; font-size: 13px; color: var(--muted); }
+  .status.run { color: var(--accent); }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--danger); }
+  pre#log {
+    background: var(--log-bg); color: var(--log-text); border-radius: 8px;
+    padding: 12px; height: 420px; overflow: auto; margin: 12px 0 0;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-word;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 4px; border-top: 1px solid var(--border); }
+  td.num { color: var(--muted); white-space: nowrap; text-align: right; }
+  a { color: var(--accent); }
+  .empty { color: var(--muted); }
+  .toast { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg);
+    padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: .92; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FunPay Lots Collector</h1>
+
+  <div class="grid">
+    <form class="card" id="envForm" autocomplete="off">
+      <h2>Настройки (.env)</h2>
+      <div id="fields"></div>
+      <div class="actions">
+        <button type="submit">Сохранить</button>
+        <button type="button" class="primary" id="saveRun">Сохранить и запустить</button>
+      </div>
+    </form>
+
+    <div>
+      <div class="card">
+        <h2>Сканирование</h2>
+        <div class="actions">
+          <button class="primary" id="run">Запустить</button>
+          <button class="danger" id="stop" disabled>Остановить</button>
+          <span class="status" id="status">Не запущено</span>
+        </div>
+        <pre id="log"></pre>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="actions" style="margin-bottom:8px">
+          <h2 style="margin:0">Результаты (done/)</h2>
+          <button id="refresh" style="margin-left:auto">Обновить</button>
+        </div>
+        <div id="results"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GROUPS = [
+  { title: "Авторизация", fields: [
+    { key: "FUNPAY_GOLDEN_KEY", label: "golden_key", secret: true, hint: "Кука из Cookie-Editor после входа на funpay.com" },
+    { key: "FUNPAY_PHPSESSID", label: "PHPSESSID", secret: true },
+  ]},
+  { title: "Что собирать", fields: [
+    { key: "FUNPAY_USER_IDS", label: "ID профилей", hint: "Через запятую: 123456,654321" },
+    { key: "PREFERRED_NODES", label: "ID категорий (нод)", hint: "Через запятую. Пусто — весь профиль" },
+    { key: "SKIP_AUTO_DELIVERY", label: "Пропускать лоты с автовыдачей", options: [["0", "Нет"], ["1", "Да"]] },
+    { key: "PREFER_LOCALE", label: "Валюта цен", options: [["ru", "Рубли (RUB)"], ["us", "Доллары (USD)"], ["eur", "Евро (EUR)"]] },
+  ]},
+  { title: "Запросы", pair: true, fields: [
+    { key: "REQUEST_TIMEOUT", label: "Таймаут, с", type: "number" },
+    { key: "REQUEST_DELAY", label: "Задержка, с", type: "number", step: "0.1" },
+    { key: "LOG_LEVEL", label: "Уровень логов", options: [["DEBUG","DEBUG"],["INFO","INFO"],["WARNING","WARNING"],["ERROR","ERROR"]] },
+    { key: "USER_AGENT", label: "User-Agent" },
+  ]},
+  { title: "Значения лотов", pair: true, fields: [
+    { key: "DEFAULT_AMOUNT", label: "Количество", type: "number" },
+    { key: "DEFAULT_ACTIVE", label: "Активен", options: [["on", "Да"], ["", "Нет"]] },
+    { key: "FORM_CREATED_AT", label: "form_created_at", hint: "0 — текущее время" },
+  ]},
+  { title: "Папки", pair: true, fields: [
+    { key: "DONE_DIR", label: "Готовые JSON" },
+    { key: "SNODS_DIR", label: "Кэш нод" },
+    { key: "LOGS_DIR", label: "Логи" },
+  ]},
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let extraKeys = [];
+
+function toast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function fieldHtml(f) {
+  const id = "f_" + f.key;
+  let control;
+  if (f.options) {
+    control = `<select id="${id}" name="${f.key}">` +
+      f.options.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("") + `</select>`;
+  } else if (f.secret) {
+    control = `<div class="row"><input id="${id}" name="${f.key}" type="password">` +
+      `<button type="button" data-toggle="${id}">👁</button></div>`;
+  } else {
+    control = `<input id="${id}" name="${f.key}" type="${f.type || "text"}" ${f.step ? `step="${f.step}"` : ""}>`;
+  }
+  return `<label><span class="label">${esc(f.label)}</span>${control}` +
+    (f.hint ? `<span class="hint">${esc(f.hint)}</span>` : "") + `</label>`;
+}
+
+async function loadEnv() {
+  const env = await (await fetch("/api/env")).json();
+  const known = new Set(GROUPS.flatMap((g) => g.fields.map((f) => f.key)));
+  extraKeys = Object.keys(env).filter((k) => !known.has(k));
+  const groups = extraKeys.length
+    ? [...GROUPS, { title: "Прочее", fields: extraKeys.map((k) => ({ key: k, label: k })) }]
+    : GROUPS;
+
+  $("fields").innerHTML = groups.map((g) =>
+    `<div class="group"><div class="group-title">${esc(g.title)}</div>` +
+    `<div class="${g.pair ? "two" : ""}">${g.fields.map(fieldHtml).join("")}</div></div>`
+  ).join("");
+
+  for (const [k, v] of Object.entries(env)) {
+    const el = $("f_" + k);
+    if (!el) continue;
+    if (el.tagName === "SELECT" && ![...el.options].some((o) => o.value === v)) {
+      el.add(new Option(v, v));
+    }
+    el.value = v;
+  }
+  document.querySelectorAll("[data-toggle]").forEach((b) => b.onclick = () => {
+    const input = $(b.dataset.toggle);
+    input.type = input.type === "password" ? "text" : "password";
+  });
+}
+
+async function saveEnv() {
+  const data = Object.fromEntries(new FormData($("envForm")));
+  const r = await fetch("/api/env", { method: "POST", body: JSON.stringify(data) });
+  toast(r.ok ? "Сохранено в .env" : "Ошибка сохранения");
+  return r.ok;
+}
+
+// --- Сканирование ---
+let offset = 0, polling = null;
+
+async function run() {
+  const r = await fetch("/api/run", { method: "POST" });
+  if (!r.ok) { toast((await r.json()).error || "Не удалось запустить"); return; }
+  $("log").textContent = "";
+  offset = 0;
+  startPolling();
+}
+
+function startPolling() {
+  if (!polling) polling = setInterval(poll, 1000);
+  poll();
+}
+
+async function poll() {
+  const s = await (await fetch("/api/status?offset=" + offset)).json();
+  if (s.offset < offset) { $("log").textContent = ""; offset = 0; return; }
+  if (s.lines.length) {
+    const log = $("log");
+    const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 30;
+    log.textContent += s.lines.join("\n") + "\n";
+    if (atBottom) log.scrollTop = log.scrollHeight;
+  }
+  offset = s.offset;
+
+  $("run").disabled = $("saveRun").disabled = s.running;
+  $("stop").disabled = !s.running;
+  const st = $("status");
+  if (s.running) { st.textContent = "Идёт сканирование…"; st.className = "status run"; }
+  else if (s.exit_code === 0) { st.textContent = "Готово"; st.className = "status ok"; }
+  else if (s.exit_code !== null) { st.textContent = "Ошибка (код " + s.exit_code + ")"; st.className = "status err"; }
+  else { st.textContent = "Не запущено"; st.className = "status"; }
+
+  if (!s.running && polling) {
+    clearInterval(polling);
+    polling = null;
+    loadResults();
+  }
+}
+
+// --- Результаты ---
+async function loadResults() {
+  const files = await (await fetch("/api/results")).json();
+  if (!files.length) { $("results").innerHTML = `<div class="empty">Пока пусто</div>`; return; }
+  $("results").innerHTML = "<table>" + files.map((f) =>
+    `<tr><td><a href="/api/results/${encodeURIComponent(f.name)}">${esc(f.name)}</a></td>` +
+    `<td class="num">${f.count ?? "?"} лотов</td>` +
+    `<td class="num">${new Date(f.mtime * 1000).toLocaleString()}</td></tr>`
+  ).join("") + "</table>";
+}
+
+$("envForm").onsubmit = (e) => { e.preventDefault(); saveEnv(); };
+$("saveRun").onclick = async () => { if (await saveEnv()) run(); };
+$("run").onclick = run;
+$("stop").onclick = () => fetch("/api/stop", { method: "POST" });
+$("refresh").onclick = loadResults;
+
+loadEnv();
+loadResults();
+startPolling();
+</script>
+</body>
+</html>
