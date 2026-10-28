@@ -13,6 +13,10 @@ collect_lots.py
     REQUEST_TIMEOUT    — таймаут запросов в секундах (по умолчанию 30)
     REQUEST_DELAY      — задержка между запросами в секундах (по умолчанию 0.5)
     USER_AGENT         — User-Agent для запросов
+    PREFER_LOCALE      — валюта цен: ru = рубли, us = доллары (по умолчанию ru)
+    DEFAULT_AMOUNT     — количество товара в лоте (по умолчанию 10000)
+    DEFAULT_ACTIVE     — "on" = лот активен, пусто = неактивен (по умолчанию on)
+    FORM_CREATED_AT    — значение form_created_at, 0 = текущее время (по умолчанию 0)
 """
 
 import json
@@ -55,9 +59,19 @@ USER_AGENT = os.getenv(
 )
 
 SNODS_DIR = Path(os.getenv("SNODS_DIR", "snods"))
-DONE_DIR = Path("done")
+DONE_DIR = Path(os.getenv("DONE_DIR", "done"))
 
 SKIP_AUTO_DELIVERY = int(os.getenv("SKIP_AUTO_DELIVERY", "0"))
+
+# Валюта цен: FunPay выбирает её по куке "cy" (rub / usd / eur)
+_CURRENCIES = {"ru": "rub", "us": "usd", "en": "usd"}
+_prefer_locale = os.getenv("PREFER_LOCALE", "ru").strip().lower()
+CURRENCY = _CURRENCIES.get(_prefer_locale, _prefer_locale) or "rub"
+
+# Базовые значения формы лота
+DEFAULT_AMOUNT = os.getenv("DEFAULT_AMOUNT", "10000")
+DEFAULT_ACTIVE = os.getenv("DEFAULT_ACTIVE", "on")
+FORM_CREATED_AT = int(os.getenv("FORM_CREATED_AT", "0") or 0)
 
 # Маппинг: заголовок параметра на сайте → ключ в base_form
 FIELD_NAMES = {
@@ -107,7 +121,7 @@ def get_lot_page(session: requests.Session, lot_id: str, locale: str) -> Optiona
     """
     for endpoint in ("lots", "chips"):
         url = f"https://funpay.com/{endpoint}/offer?id={lot_id}"
-        response = fetch_with_retry(session, url, cookies={"locale": locale})
+        response = fetch_with_retry(session, url, cookies={"locale": locale, "cy": CURRENCY})
         if response is None:
             return None
 
@@ -142,9 +156,10 @@ def extract_price(soup: BeautifulSoup) -> Optional[str]:
     price_tag = inner.find("span", class_="payment-value")
     if not price_tag:
         return None
-    price_raw = price_tag.get_text(strip=True)
-    match = re.findall(r"[\d]+[.,][\d]+", price_raw)
-    return match[0] if match else None
+    # Убираем разделители тысяч ("178 203.99 ₽"), запятую приводим к точке
+    price_raw = re.sub(r"\s", "", price_tag.get_text(strip=True)).replace(",", ".")
+    match = re.search(r"\d+(?:\.\d+)?", price_raw)
+    return match.group(0) if match else None
 
 
 def extract_params(soup: BeautifulSoup, locale: str) -> dict:
@@ -235,7 +250,7 @@ def build_form(details: dict, node_fields: dict) -> dict:
         Заполненный словарь формы.
     """
     form = {
-        "form_created_at": "1763841632",
+        "form_created_at":       str(FORM_CREATED_AT or int(time.time())),
         "node_id":               details["node_id"],
         "location":              "",
         "deleted":               "",
@@ -244,8 +259,8 @@ def build_form(details: dict, node_fields: dict) -> dict:
         "fields[images]":        "",
         "auto_delivery":         "",
         "price":                 details["price"],
-        "amount":                "10000",
-        "active":                "on",
+        "amount":                DEFAULT_AMOUNT,
+        "active":                DEFAULT_ACTIVE,
         "fields[desc][ru]":      "",
         "fields[desc][en]":      "",
         "fields[payment_msg][ru]": "",
